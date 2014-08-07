@@ -1,0 +1,14 @@
+DONE
+get number of lines
+generate a random number
+pick a word
+
+
+
+method to print out '_' if letter has not been guessed
+otherwise pring out character if letter has been guessed
+find out how to see if string contains letter
+
+driver to prompt user and call methods
+
+

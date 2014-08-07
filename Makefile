@@ -1,0 +1,2 @@
+default:
+	gcc hangman.c
