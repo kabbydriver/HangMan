@@ -1,2 +1,2 @@
 default:
-	gcc hangman.c
+	gcc -g hangman.c -o hangman
