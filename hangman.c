@@ -1,47 +1,52 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <ctype.h>
 #include <string.h>
 
 #define TRUE 1
 #define FALSE 0
 #define DASH '_'
 
-typedef struct Letter 
+typedef struct Game
 {
 	int gameOver;  /* If the whole word has been guessed */
   int numRight;   /* Number of letters correctly guessed */
-	char randomWord[80];
+	char randomWord[80]; /* holds the word */
+	int totalGuesses; /* hold the total number of guesses made correct & incorrect */
+	char lettersGuessed[80];
 
-}Letter;
+}Game;
 
 int selectWord(char letters []);
 int compareChar(char input, char * originalWord, char guesses []);
 int gameOver(int numRight, int wordLength, char letters []);
 void printWelcomeMessages(int wordLength);
 void printChar(char guesses [], int length);
-void newGame(Letter newGame, char letters []);
+void newGame(Game newGame, char letters []);
+void printLettersGuessed( Game * game, int totalGuesses );
+int contains( char * word, char * character );
 
 int main(int argc, char * argv[]) 
 {
 
-  Letter letter = {FALSE, 0};
+  Game game = {FALSE, 0};
   char guesses[80];
   int wordLength;
   int dashes;
-  int numGuesses;
+  int incorrectGuesses;
   int maxTries;
-  
-  while(letter.gameOver != TRUE)
+
+  while(game.gameOver == FALSE)
   {
     char * word;
     char * ptr;
    	wordLength = 0;
     dashes = 0;
-    numGuesses = 0;
+    incorrectGuesses = 0;
     maxTries = 15;
-	  wordLength = selectWord(letter.randomWord);        /* Selecting random word */
-	  word = letter.randomWord;                          /* Assigning word  to the randomWord */
+	  wordLength = selectWord(game.randomWord);        /* Selecting random word */
+	  word = game.randomWord;                          /* Assigning word  to the randomWord */
     ptr = strchr(word,'\n');                           /* Getting rid of the new line */ 
     *ptr = '\0';
 
@@ -49,23 +54,26 @@ int main(int argc, char * argv[])
     {
       guesses[dashes] = DASH;
     }
-    
+  
     printWelcomeMessages( wordLength );
 	
     char input;
 	
-    while(letter.gameOver != TRUE)
+    while(game.gameOver == FALSE)
 	  {
-      printf("Number of guesses: %i\n",numGuesses);
-      printf("Number of tries left: %i\n",(maxTries - numGuesses));
+			
+      printf("Number of guesses: %i\n",incorrectGuesses);
+      printf("Number of tries left: %i\n",(maxTries - incorrectGuesses));
+			printLettersGuessed( &game, game.totalGuesses );
 		  printf( "Guess a letter: ");
-		  input = getchar();
-      numGuesses++;
+			scanf( " %c", &input );
 
       if (input == '\n' || input == ' ')
       {
         input = getchar();
       }
+			game.lettersGuessed[game.totalGuesses] = input;
+			game.totalGuesses++;
       if (compareChar(input,word,guesses))
       {
         printf("\n\nYou guessed '%c' correctly\n\n",input);
@@ -73,36 +81,63 @@ int main(int argc, char * argv[])
       else
       {
         printf("\n\nSorry, '%c' is not a letter in the word\n\n",input);
+				incorrectGuesses++;
       }
 
       printChar(guesses,wordLength);
-      if (!gameOver(letter.numRight,wordLength,guesses))
+      if (!gameOver(game.numRight,wordLength,guesses))
       {
+				system("clear");
         printf("Congratulations! You have correctly guessed '%s'!\n\n",guesses);
         break;
       }
-      if (numGuesses == maxTries)
+      if (incorrectGuesses == maxTries)
       {
+				system("clear");
         printf("GAME OVER!\nYou have failed to guess '%s'\n\n",word);
         break;
       }
       
 	  }
 
-    newGame(letter,guesses);
+    newGame(game,guesses);
   }
 	return 0;
 }
 
-void newGame(Letter newGame, char letters [])
+void printLettersGuessed( Game * game, int totalGuesses )
+{
+	if( totalGuesses == 0 ) { return; }
+
+	printf("You have guessed the following letters: " );
+	char * word = game -> randomWord;
+	for( int i = 0; i < totalGuesses; i++ )
+	{
+		char * character = &(game -> lettersGuessed[i]);
+		if( contains( word, character ) )
+		{
+			printf( "\x1b[32m %s \x1b[0m", character ); //print in green -- is correct
+		}
+		else
+		{
+			printf( "\x1b[31m %s \x1b[0m", character ); //print in green -- not correct
+		}
+	}
+	printf( "\n" );
+	
+}
+
+void newGame(Game newGame, char letters [])
 {
 
-  memset(&newGame,0,sizeof(Letter));
+  memset(&newGame,0,sizeof(Game));
   memset(letters,' ',80);
   newGame.numRight = 0;
   newGame.gameOver = FALSE;
+	newGame.totalGuesses = 0;
   printf("Starting a new game...\n");
 }
+
 int gameOver(int numRight, int wordLength, char letters [])
 {
   int index;
@@ -115,12 +150,25 @@ int gameOver(int numRight, int wordLength, char letters [])
   
   return (wordLength - numRight);
 }
+
+int contains( char * word, char * character )
+{
+	char * result = (char * ) strstr( word, character );
+
+	if( result == NULL )
+	{
+		return 0;
+	}
+	return 1;
+}
+
 void printChar(char guesses [], int length)
 {
   int i = 0;
   for ( i = 0; i < length; printf("%c ",guesses[i]), i++);
   puts("\n");
 }
+
 int compareChar(char input, char * originalWord, char guesses [])
 {
   char * tempPtr = originalWord;
@@ -141,6 +189,7 @@ int compareChar(char input, char * originalWord, char guesses [])
 
 void printWelcomeMessages(int wordLength)
 {
+
   int dashes;
 	printf("WELCOME TO HANGMAN\n");
 	printf("\nSelecting a random word.");
@@ -170,7 +219,7 @@ int selectWord( char letters[])
   index = 0;
   do {
     c = fgetc(fp);
-    letters[index] = c;
+    letters[index] = tolower(c);
     index++;
     } while (c != '\n');
 	
